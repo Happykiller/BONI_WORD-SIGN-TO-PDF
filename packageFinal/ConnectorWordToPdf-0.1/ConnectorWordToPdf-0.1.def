@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definition:ConnectorDefinition xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:definition="http://www.bonitasoft.org/ns/connector/definition/6.1">
+  <id>ConnectorWordToPdf</id>
+  <version>0.1</version>
+  <icon>icon.png</icon>
+  <category icon="icon.png" id="custom"/>
+  <input mandatory="true" name="from" type="java.lang.String"/>
+  <input mandatory="true" name="to" type="java.lang.String"/>
+  <input mandatory="true" name="tmp" type="java.lang.String"/>
+  <input mandatory="true" name="fileName" type="java.lang.String"/>
+  <input mandatory="true" name="fileNameFinal" type="java.lang.String"/>
+  <input mandatory="true" name="mapping" type="java.util.List"/>
+  <output name="out" type="java.lang.Boolean"/>
+  <page id="DefineInput">
+    <widget xsi:type="definition:Text" id="from" inputName="from"/>
+    <widget xsi:type="definition:Text" id="to" inputName="to"/>
+    <widget xsi:type="definition:Text" id="tmp" inputName="tmp"/>
+    <widget xsi:type="definition:Text" id="fileName" inputName="fileName"/>
+    <widget xsi:type="definition:Text" id="fileNameFinal" inputName="fileNameFinal"/>
+    <widget xsi:type="definition:Array" id="mapping" inputName="mapping" cols="2">
+        <colsCaption>key</colsCaption>
+        <colsCaption>value</colsCaption>
+    </widget>
+  </page>
+</definition:ConnectorDefinition>
