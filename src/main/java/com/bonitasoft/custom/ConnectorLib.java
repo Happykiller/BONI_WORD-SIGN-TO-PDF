@@ -146,7 +146,7 @@ public class ConnectorLib {
         boolean boolReturn = false;
         try {
             Path FROM = Paths.get(From+fileName);
-            Path TO = Paths.get(To+fileName);
+            Path TO = Paths.get(To + fileName);
 
             //overwrite existing file, if exists
             CopyOption[] options = new CopyOption[]{
@@ -291,6 +291,21 @@ public class ConnectorLib {
 
                 if (rangeStart>0 && rangeEnd>rangeStart) {
 
+                    RFonts thefonts = new RFonts();
+                    try{
+                        for (int j = rangeEnd; j >= rangeStart; j--) {
+                            if(theList.get(j) instanceof org.docx4j.wml.R){
+                                org.docx4j.wml.R theR = (org.docx4j.wml.R) theList.get(j);
+                                thefonts = theR.getRPr().getRFonts();
+                                break;
+                            }
+                        }
+                    }catch (Exception ex) {
+                        trace("replaceBookmarkContents - Exception : " + ex);
+                        RFonts rfonts = factory.createRFonts();
+                        rfonts.setAscii("Arial");
+                    }
+
                     // Delete the bookmark range
                     for (int j = rangeEnd; j >= rangeStart; j--) {
                         theList.remove(j);
@@ -298,9 +313,15 @@ public class ConnectorLib {
 
                     // now add a run
                     org.docx4j.wml.R run = factory.createR();
+
                     org.docx4j.wml.Text t = factory.createText();
-                    run.getContent().add(t);
                     t.setValue(value);
+
+                    org.docx4j.wml.RPr rpr = factory.createRPr();
+                    rpr.setRFonts(thefonts);
+
+                    run.getContent().add(rpr);
+                    run.getContent().add(t);
 
                     theList.add(rangeStart, run);
                 }

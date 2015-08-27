@@ -38,11 +38,20 @@ public class Tests {
     public static void testRunConnector(){
         List<List> list = new ArrayList<List>();
 
-        List<String> elt = new ArrayList<String>();
-        elt.add("CodePostal");
-        elt.add("38100");
+        List<String> eltCodePostal = new ArrayList<String>();
+        eltCodePostal.add("CodePostal");
+        eltCodePostal.add("38100");
+        list.add(eltCodePostal);
 
-        list.add(elt);
+        List<String> eltVille = new ArrayList<String>();
+        eltVille.add("VILLE");
+        eltVille.add("Grenoble");
+        list.add(eltVille);
+
+        List<String> eltDateJour = new ArrayList<String>();
+        eltDateJour.add("dateJour");
+        eltDateJour.add("2022-02-22");
+        list.add(eltDateJour);
 
         boolean retour = ConnectorLib.runConnector(
             System.getProperty("user.dir") + "\\resources\\"
@@ -77,7 +86,6 @@ public class Tests {
 
         list.add(elt);
 
-
         Map<DataFieldName, String> retour = ConnectorLib.listToMap(list);
 
         ConnectorLib.trace("Test testListToMapf : " + !retour.isEmpty());
@@ -86,7 +94,7 @@ public class Tests {
     public static void testChangeBookmarkWithString() {
         try {
             Map<DataFieldName, String> map = new HashMap<DataFieldName, String>();
-            map.put(new DataFieldName("CodePostal"), "whale shark");
+            map.put(new DataFieldName("CodePostal"), "38100");
 
             WordprocessingMLPackage wordMLPackage = WordprocessingMLPackage.load(new File(System.getProperty("user.dir") + "\\resources\\patern-signets.docx"));
 
