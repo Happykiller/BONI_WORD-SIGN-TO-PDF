@@ -57,7 +57,7 @@ public class Tests {
             System.getProperty("user.dir") + "\\resources\\"
             , System.getProperty("user.dir") + "\\resources\\build\\"
             , System.getProperty("user.dir") + "\\resources\\tmp\\"
-            , "patern-signets.docx"
+            , "patern-signetsCA.docx"
             , ConnectorLib.getDateTimeStr()+"_builded.pdf"
             , list
         );

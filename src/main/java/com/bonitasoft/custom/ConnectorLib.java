@@ -302,8 +302,8 @@ public class ConnectorLib {
                         }
                     }catch (Exception ex) {
                         trace("replaceBookmarkContents - Exception : " + ex);
-                        RFonts rfonts = factory.createRFonts();
-                        rfonts.setAscii("Arial");
+                        thefonts = factory.createRFonts();
+                        thefonts.setAscii("Arial");
                     }
 
                     // Delete the bookmark range
@@ -313,16 +313,12 @@ public class ConnectorLib {
 
                     // now add a run
                     org.docx4j.wml.R run = factory.createR();
-
                     org.docx4j.wml.Text t = factory.createText();
-                    t.setValue(value);
-
                     org.docx4j.wml.RPr rpr = factory.createRPr();
+                    t.setValue(value);
                     rpr.setRFonts(thefonts);
-
                     run.getContent().add(rpr);
                     run.getContent().add(t);
-
                     theList.add(rangeStart, run);
                 }
             }
