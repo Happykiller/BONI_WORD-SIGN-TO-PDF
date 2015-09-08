@@ -57,7 +57,7 @@ public class Tests {
             System.getProperty("user.dir") + "\\resources\\"
             , System.getProperty("user.dir") + "\\resources\\build\\"
             , System.getProperty("user.dir") + "\\resources\\tmp\\"
-            , "patern-signetsCA.docx"
+            , "patern-signets.docx"
             , ConnectorLib.getDateTimeStr()+"_builded.pdf"
             , list
         );
@@ -75,37 +75,6 @@ public class Tests {
         boolean retour = ConnectorLib.docxToPdf(System.getProperty("user.dir") + "\\resources\\", System.getProperty("user.dir") + "\\resources\\build\\", "patern-signets.docx", "testDocxToPdf_"+ConnectorLib.getDateTimeStr()+".pdf");
 
         ConnectorLib.trace("Test testDocxToPdf : " + retour);
-    }
-
-    public static void testListToMapf(){
-        List<List> list = new ArrayList<List>();
-
-        List<String> elt = new ArrayList<String>();
-        elt.add("key");
-        elt.add("value");
-
-        list.add(elt);
-
-        Map<DataFieldName, String> retour = ConnectorLib.listToMap(list);
-
-        ConnectorLib.trace("Test testListToMapf : " + !retour.isEmpty());
-    }
-
-    public static void testChangeBookmarkWithString() {
-        try {
-            Map<DataFieldName, String> map = new HashMap<DataFieldName, String>();
-            map.put(new DataFieldName("CodePostal"), "38100");
-
-            WordprocessingMLPackage wordMLPackage = WordprocessingMLPackage.load(new File(System.getProperty("user.dir") + "\\resources\\patern-signets.docx"));
-
-            ConnectorLib.changeBookmarkWithString(wordMLPackage, map);
-
-            wordMLPackage.save(new File(System.getProperty("user.dir") + "\\resources\\build\\testChangeBookmarkWithString_"+ConnectorLib.getDateTimeStr()+".docx"));
-
-            ConnectorLib.trace("Test testChangeBookmarkWithString : " + true);
-        }catch (Exception ex) {
-            ConnectorLib.trace("testChangeBookmarkWithString - Exception : " + ex);
-        }
     }
 
     public static void testInsertImg(){

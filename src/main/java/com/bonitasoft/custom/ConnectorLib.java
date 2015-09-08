@@ -4,35 +4,32 @@ import org.apache.poi.xwpf.converter.pdf.PdfConverter;
 import org.apache.poi.xwpf.converter.pdf.PdfOptions;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.docx4j.TraversalUtil;
-import org.docx4j.XmlUtils;
 import org.docx4j.dml.wordprocessingDrawing.Inline;
 import org.docx4j.finders.RangeFinder;
-import org.docx4j.jaxb.Context;
-import org.docx4j.model.fields.merge.DataFieldName;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
 import org.docx4j.openpackaging.parts.WordprocessingML.BinaryPartAbstractImage;
 import org.docx4j.openpackaging.parts.WordprocessingML.MainDocumentPart;
 import org.docx4j.wml.*;
 
+import javax.xml.bind.JAXBElement;
 import java.io.*;
 import java.nio.file.*;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * Created by Fabrice.R on 20/05/2015.
+ *
+ * Rules : use bookmark each bookmark must contain the same text as the name of the bookmark (ex : bookmark name : "town", bookmark contain text : "town"
+ *
  */
 public class ConnectorLib {
 
     private static final Logger uilLogger = Logger.getLogger("com.bonitasoft.groovy");
-
-    private static org.docx4j.wml.ObjectFactory factory = Context.getWmlObjectFactory();
 
     public static void trace(String message){
         try {
@@ -64,20 +61,6 @@ public class ConnectorLib {
             return retour;
         }catch (Exception ex) {
             trace("sayHello - Exception : " + ex);
-            return null;
-        }
-    }
-
-    public static Map listToMap(List inList){
-        Map<DataFieldName, String> retour = new HashMap<DataFieldName, String>();
-        try {
-            for (Object elt : inList) {
-                List eltList = (List) elt;
-                retour.put(new DataFieldName((String)eltList.get(0)), (String)eltList.get(1));
-            }
-            return retour;
-        }catch (Exception ex) {
-            trace("listToMap - Exception : " + ex);
             return null;
         }
     }
@@ -114,14 +97,15 @@ public class ConnectorLib {
                 return false;
             }
 
-            Map<DataFieldName, String> mapping = listToMap(listMapping);
-
             String dateTimeStr = getDateTimeStr();
             String tmpFile = dateTimeStr+"_tmp_"+fileName;
 
             WordprocessingMLPackage wordMLPackage = WordprocessingMLPackage.load(new File(from + fileName));
 
-            changeBookmarkWithString(wordMLPackage, mapping);
+            if(!changeValueBookmark(wordMLPackage, listMapping)){
+                trace("error while change bookmarks");
+                return false;
+            }
 
             wordMLPackage.save(new File(tmp + tmpFile));
 
@@ -138,6 +122,46 @@ public class ConnectorLib {
             return retour;
         } catch (Exception ex) {
             trace("runConnector - Exception : " + ex);
+            return false;
+        }
+    }
+
+    public static boolean changeValueBookmark(WordprocessingMLPackage wordMLPackage, List listMapping){
+        try {
+            for (Object elt : listMapping) {
+                String key = (String) ((List<String>) elt).get(0);
+                String value = (String) ((List<String>) elt).get(1);
+                List<Object> parentNode = findContent(wordMLPackage, key);
+
+                //the parent node can contain many different things, sometimes even empty texts.
+                for (Object eltInParent : parentNode) {
+                    boolean gardian = false;
+                    if (eltInParent instanceof org.docx4j.wml.R) {
+                        org.docx4j.wml.R theR = (org.docx4j.wml.R) eltInParent;
+
+                        for (Object ob : theR.getContent()) {
+                            Object content = ((JAXBElement) ob).getValue();
+                            if (content instanceof org.docx4j.wml.Text) {
+                                String valueold = ((Text) content).getValue();
+                                //We need to choose the good text to edit, we use the key to recognize it
+                                if (valueold.equalsIgnoreCase(key)) {
+                                    ((Text) content).setValue(value);
+                                    gardian = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if(gardian){
+                            break;
+                        }
+                    }
+                }
+            }
+
+            return true;
+        }catch (Exception ex) {
+            trace("changeValueBookmark - changeValueBookmark : " + ex);
             return false;
         }
     }
@@ -195,19 +219,6 @@ public class ConnectorLib {
         }
     }
 
-    public static WordprocessingMLPackage changeBookmarkWithString(WordprocessingMLPackage wordMLPackage, Map<DataFieldName, String> mapping){
-        try {
-            MainDocumentPart documentPart = wordMLPackage.getMainDocumentPart();
-
-            replaceBookmarkContents(documentPart.getContent(), mapping);
-
-            return wordMLPackage;
-        }catch (Exception ex) {
-            trace("changeBookmarkWithString - Exception : " + ex);
-            return null;
-        }
-    }
-
     public static WordprocessingMLPackage changeBookmarkWithImg(WordprocessingMLPackage wordMLPackage, String img){
         try {
             File file = new File(img);
@@ -230,7 +241,8 @@ public class ConnectorLib {
             new TraversalUtil(paragraphs, rt);
 
             for (CTBookmark bm : rt.getStarts()) {
-                if (bm.getName().equals(key)) {
+                String name = bm.getName();
+                if (name.equalsIgnoreCase(key)) {
                     return ((ContentAccessor)(bm.getParent())).getContent();
                 }
             }
@@ -239,93 +251,6 @@ public class ConnectorLib {
         }catch (Exception ex) {
             trace("findContent - Exception : " + ex);
             return null;
-        }
-    }
-
-    public static boolean replaceBookmarkContents(List<Object> paragraphs, Map<DataFieldName, String> data) throws Exception {
-        try {
-            boolean DELETE_BOOKMARK = true;
-
-            RangeFinder rt = new RangeFinder("CTBookmark", "CTMarkupRange");
-            new TraversalUtil(paragraphs, rt);
-
-            for (CTBookmark bm : rt.getStarts()) {
-
-                // do we have data for this one?
-                if (bm.getName()==null) continue;
-                String value = data.get(new DataFieldName(bm.getName()));
-                if (value==null) continue;
-
-                // Can't just remove the object from the parent,
-                // since in the parent, it may be wrapped in a JAXBElement
-                List<Object> theList = null;
-                if (bm.getParent() instanceof P) {
-                    theList = ((ContentAccessor)(bm.getParent())).getContent();
-                } else {
-                    continue;
-                }
-
-                int rangeStart = -1;
-                int rangeEnd = -1;
-                int i = 0;
-                for (Object ox : theList) {
-                    Object listEntry = XmlUtils.unwrap(ox);
-                    if (listEntry.equals(bm)) {
-                        if (DELETE_BOOKMARK) {
-                            rangeStart=i;
-                        } else {
-                            rangeStart=i+1;
-                        }
-                    } else if (listEntry instanceof CTMarkupRange) {
-                        if ( ((CTMarkupRange)listEntry).getId().equals(bm.getId())) {
-                            if (DELETE_BOOKMARK) {
-                                rangeEnd=i;
-                            } else {
-                                rangeEnd=i-1;
-                            }
-                            break;
-                        }
-                    }
-                    i++;
-                }
-
-                if (rangeStart>0 && rangeEnd>rangeStart) {
-
-                    RFonts thefonts = new RFonts();
-                    try{
-                        for (int j = rangeEnd; j >= rangeStart; j--) {
-                            if(theList.get(j) instanceof org.docx4j.wml.R){
-                                org.docx4j.wml.R theR = (org.docx4j.wml.R) theList.get(j);
-                                thefonts = theR.getRPr().getRFonts();
-                                break;
-                            }
-                        }
-                    }catch (Exception ex) {
-                        trace("replaceBookmarkContents - Exception : " + ex);
-                        thefonts = factory.createRFonts();
-                        thefonts.setAscii("Arial");
-                    }
-
-                    // Delete the bookmark range
-                    for (int j = rangeEnd; j >= rangeStart; j--) {
-                        theList.remove(j);
-                    }
-
-                    // now add a run
-                    org.docx4j.wml.R run = factory.createR();
-                    org.docx4j.wml.Text t = factory.createText();
-                    org.docx4j.wml.RPr rpr = factory.createRPr();
-                    t.setValue(value);
-                    rpr.setRFonts(thefonts);
-                    run.getContent().add(rpr);
-                    run.getContent().add(t);
-                    theList.add(rangeStart, run);
-                }
-            }
-            return true;
-        }catch (Exception ex) {
-            trace("replaceBookmarkContents - Exception : " + ex);
-            return false;
         }
     }
 
